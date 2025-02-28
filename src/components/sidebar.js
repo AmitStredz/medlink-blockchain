@@ -43,7 +43,8 @@ export default function Sidebar() {
   };
 
   return (
-    <>
+    <div className="relative lg:w-60 z-[1000000]">
+      <div className="fixed top-0 left-0">
       {/* Mobile Hamburger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -66,7 +67,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <div
-        className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        className={`fixed lg:static inset-y-0 right-0 z-40 w-screen lg:w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out lg:transform-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } flex flex-col h-screen`}
       >
@@ -75,7 +76,7 @@ export default function Sidebar() {
           <div className="flex items-center gap-2">
             <RiPulseLine className="text-3xl text-blue-500" />
             <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-              MediLink
+              MedLink
             </span>
           </div>
         </div>
@@ -116,6 +117,7 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </>
+    </div>
+    </div>
   );
 }
