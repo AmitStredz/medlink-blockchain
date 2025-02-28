@@ -1,131 +1,201 @@
 import axios from "axios";
-import React, { useState } from "react";
-import { FaCheckCircle } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
 import { IoClose } from "react-icons/io5";
+import { FaUserPlus, FaCheckCircle } from "react-icons/fa";
+import { MdPerson, MdCalendarToday, MdWc } from "react-icons/md";
 
-const AddPatientModal = ({ onClose }) => {
+const AddPatientModal = ({ onClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [sex, setSex] = useState("");
-  const [doctor, setDoctor] = useState("");
   const [successModal, setSuccessModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    doctor: null,
+  });
 
-  const handleAddPatient = async () => {
-    if(isLoading) return;
+  useEffect(() => {
+    const userId = localStorage.getItem("id");
+    if (userId) {
+      setFormData(prev => ({
+        ...prev,
+        doctor: parseInt(userId)
+      }));
+    }
+  }, []);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isLoading || !formData.doctor) return;
     setIsLoading(true);
 
-    const id = localStorage.getItem("id");
-    if(!id){
-      alert("id not found");
+    const key = localStorage.getItem("key");
+    if (!key) {
+      alert("Authentication required");
       setIsLoading(false);
       return;
     }
-    const data = {
-      name: name,
-      age: age,
-      gender: sex,
-      doctor: id,
-    };
 
-    console.log("data: ", data);
-    
     try {
       const response = await axios.post(
         "https://medconnect-co7la.ondigitalocean.app/api/patients/",
-        data
+        formData,
+        {
+          headers: {
+            Authorization: `Token ${key}`,
+          },
+        }
       );
 
-      console.log("response: ", response);
-
-      if (response) {
-        console.log("id: ", response?.data?.id);
+      if (response?.data) {
         setSuccessModal(true);
+        onSuccess();
         setTimeout(() => {
           setSuccessModal(false);
           onClose();
         }, 2000);
-        // onLogin(); // Call the onLogin function to update the authentication state
-      } else {
-        console.error("Invalid response data:", response.data);
-        alert("Invalid credentials. Please try again.");
       }
     } catch (error) {
-      console.log("Error occurred: ", error);
-      alert("Invalid credentials. Try again later.");
+      console.error("Error adding patient:", error);
+      alert("Failed to add patient. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-  return (
-    <div
-      className="flex justify-center w-full fixed top-0 left-0 px-3 backdrop-blur-md z-[100] h-screen"
-      data-aos="fade-in"
-    >
-      {!successModal ? (
-        <div className="flex flex-col gap-10 my-20 bg-gradient-to-r from-[#7391cc5c] to-[#65b36baa] p-8 sm:p-10 rounded-3xl max-w-xl z-50">
-          <div className="flex flex-col gap-10">
-            <div className="flex justify-end">
-              <IoClose onClick={onClose} size={40} className="cursor-pointer" />
-            </div>
-            <div className="flex flex-col gap-3 w-96 font-mono">
-              <div className="flex flex-col">
-                <label>Name</label>
-                <input
-                  placeholder="Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="p-1 rounded-lg bg-slate-100 outline-none"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label>Age</label>
-                <input
-                  placeholder="enter age of patient"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  className="p-1 rounded-lg bg-slate-100 outline-none"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label>Sex</label>
-                <input
-                  placeholder="enter sex orientation of patient"
-                  value={sex}
-                  onChange={(e) => setSex(e.target.value)}
-                  className="p-1 rounded-lg bg-slate-100 outline-none"
-                />
-              </div>
-              {/* <div className="flex flex-col">
-                <label>Doctor</label>
-                <input
-                  placeholder="enter doctor assigned to patient"
-                  value={doctor}
-                  onChange={(e) => setDoctor(e.target.value)}
-                  className="p-1 rounded-lg bg-slate-100 outline-none"
-                />
-              </div> */}
-            </div>
 
-            <div className="flex justify-center">
-              <button
-                className={`p-2 px-14 sm:px-20 rounded-2xl bg-gradient-to-r from-green-300 to-blue-400 cursor-pointer ${
-                  isLoading ? "cursor-not-allowed" : ""
-                }`}
-                onClick={handleAddPatient}
-                // disabled={isLoading} // Disable button when loading
-              >
-                {isLoading ? "Loading..." : "Add Patient"}
-              </button>
+  if (successModal) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8 flex flex-col items-center animate-fade-in shadow-xl">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <FaCheckCircle size={32} className="text-green-500" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            Patient Added Successfully!
+          </h3>
+          <p className="text-gray-500 text-center">
+            The patient has been registered to your care.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gradient-to-b from-white to-gray-50 rounded-2xl shadow-xl max-w-md w-full animate-fade-in">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-blue-500 bg-opacity-10 flex items-center justify-center">
+                <FaUserPlus className="text-blue-500 text-2xl" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">New Patient</h2>
+                <p className="text-sm text-gray-500">Add patient to your care</p>
+              </div>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <IoClose size={24} className="text-gray-500" />
+            </button>
           </div>
         </div>
-      ) : (
-        <div className="flex justify-center h-screen w-screen items-center">
-          <FaCheckCircle size={100} data-aos="zoom-in" color="green" />
-        </div>
-      )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Name */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <MdPerson className="text-gray-400" />
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-800 bg-white/50 backdrop-blur-sm"
+              placeholder="Enter patient's full name"
+            />
+          </div>
+
+          {/* Age and Gender in one row */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Age */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <MdCalendarToday className="text-gray-400" />
+                Age
+              </label>
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                required
+                min="0"
+                max="150"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-800 bg-white/50 backdrop-blur-sm"
+                placeholder="Age"
+              />
+            </div>
+
+            {/* Gender */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <MdWc className="text-gray-400" />
+                Gender
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-800 bg-white/50 backdrop-blur-sm appearance-none cursor-pointer"
+              >
+                <option value="">Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full py-3 rounded-xl text-white font-medium transition-all duration-300 transform hover:scale-[0.99] active:scale-[0.97] ${
+              isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg'
+            }`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Adding Patient...</span>
+              </div>
+            ) : (
+              'Register Patient'
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
+
 export default AddPatientModal;

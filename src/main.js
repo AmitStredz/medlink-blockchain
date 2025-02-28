@@ -21,7 +21,7 @@ export default function main({ onLogout }) {
       <div className="flex-1">
         <Routes>
           <Route path="/dashboard" element={<DashboardContent />} />
-          <Route path="/patient" element={<Patient />} />
+          <Route path="/patients" element={<Patient />} />
           <Route path="/community" element={<Community />} />
           <Route path="/ai" element={<AiAssistant />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />{" "}

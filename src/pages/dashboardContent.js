@@ -1,15 +1,41 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from '../context/AuthContext';
-import { FaUserMd, FaHospital, FaBriefcase, FaGraduationCap, FaUserInjured, FaCalendar, FaFileAlt, FaPrescriptionBottleAlt } from "react-icons/fa";
+import { FaUserMd, FaHospital, FaBriefcase, FaGraduationCap, FaUserInjured, FaCalendar, FaFileAlt, FaPrescriptionBottleAlt, FaBell, FaChartLine, FaAward } from "react-icons/fa";
 import { RiMentalHealthLine } from "react-icons/ri";
-import { MdDateRange, MdVerified } from "react-icons/md";
+import { MdDateRange, MdVerified, MdClose, MdWarning, MdEmail, MdPhone } from "react-icons/md";
 import { IoMdPulse } from "react-icons/io";
+import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
 export default function DashboardContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState(null);
   const { updateUserType } = useAuth();
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [selectedSeverity, setSelectedSeverity] = useState('all');
+  const [selectedCondition, setSelectedCondition] = useState('all');
 
   const fetchUserDetails = async () => {
     if (isLoading) return;
@@ -49,6 +75,106 @@ export default function DashboardContent() {
     fetchUserDetails();
   }, []);
 
+  // Dummy alerts data
+  const alerts = [
+    {
+      id: 1,
+      patient: "John Doe",
+      condition: "Diabetes",
+      description: "High Blood Sugar - 250 mg/dL",
+      timestamp: "15 Oct 2023, 10:30 AM",
+      severity: "high"
+    },
+    {
+      id: 2,
+      patient: "Jane Smith",
+      condition: "Hypertension",
+      description: "Blood Pressure - 150/95 mmHg",
+      timestamp: "15 Oct 2023, 09:45 AM",
+      severity: "medium"
+    },
+    {
+      id: 3,
+      patient: "Robert Johnson",
+      condition: "Diabetes",
+      description: "Missed medication dose",
+      timestamp: "14 Oct 2023, 08:15 PM",
+      severity: "low"
+    },
+    {
+      id: 4,
+      patient: "Emily Wilson",
+      condition: "Asthma",
+      description: "Severe asthma attack reported",
+      timestamp: "14 Oct 2023, 06:30 PM",
+      severity: "high"
+    }
+  ];
+
+  // Dummy doctor data
+  const doctorDetails = {
+    name: "Dr. Sarah Johnson",
+    specialization: "Cardiologist",
+    experience: "15+ years",
+    hospital: "City General Hospital",
+    email: "sarah.johnson@hospital.com",
+    phone: "+1 (555) 123-4567",
+    qualifications: "MD, FACC",
+    patientCount: 248,
+    rating: 4.9
+  };
+
+  // Chart data with fixed values
+  const patientActivityData = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        label: 'Patient Visits',
+        data: [8, 12, 9, 11, 7, 5, 8],
+        borderColor: 'rgb(59, 130, 246)',
+        tension: 0.4,
+        fill: false
+      }
+    ]
+  };
+
+  // Chart options to prevent auto-scaling
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 15, // Fixed maximum value
+        ticks: {
+          stepSize: 3
+        }
+      }
+    }
+  };
+
+  const conditionDistributionData = {
+    labels: ['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'Others'],
+    datasets: [
+      {
+        data: [35, 25, 15, 15, 10],
+        backgroundColor: [
+          'rgb(59, 130, 246)',
+          'rgb(234, 88, 12)',
+          'rgb(22, 163, 74)',
+          'rgb(219, 39, 119)',
+          'rgb(107, 114, 128)',
+        ],
+      }
+    ]
+  };
+
+  const filteredAlerts = alerts.filter(alert => {
+    const severityMatch = selectedSeverity === 'all' || alert.severity === selectedSeverity;
+    const conditionMatch = selectedCondition === 'all' || alert.condition.toLowerCase() === selectedCondition.toLowerCase();
+    return severityMatch && conditionMatch;
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -61,111 +187,174 @@ export default function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Welcome Section */}
-        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-8 mb-8 text-white">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <FaUserMd className="text-3xl" />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Doctor Profile Section */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex gap-6">
+              <div className="w-24 h-24 bg-blue-500 rounded-2xl flex items-center justify-center">
+                <FaUserMd className="text-4xl text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 mb-1">{doctorDetails.name}</h1>
+                <div className="flex items-center gap-2 text-gray-600 mb-3">
+                  <span>{doctorDetails.specialization}</span>
+                  <span>•</span>
+                  <span>{doctorDetails.experience}</span>
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <FaHospital className="text-blue-500" />
+                    <span>{doctorDetails.hospital}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <FaAward className="text-blue-500" />
+                    <span>{doctorDetails.qualifications}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold mb-2">
-                Welcome back, {userDetails?.username}
-              </h1>
-              <p className="text-blue-100">
-                {userDetails?.user_type === 'doctor' 
-                  ? 'Your dedication to healthcare makes a difference every day'
-                  : 'Your health is our priority'}
-              </p>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2 text-gray-600">
+                <MdEmail className="text-blue-500" />
+                <span>{doctorDetails.email}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <MdPhone className="text-blue-500" />
+                <span>{doctorDetails.phone}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Profile Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column - Basic Info */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-              <RiMentalHealthLine className="text-blue-500" />
-              Professional Profile
-            </h2>
-            
-            <div className="space-y-6">
-              {/* Profile Items */}
-              <ProfileItem
-                icon={<FaUserMd className="text-blue-500" />}
-                label="Full Name"
-                value={userDetails?.username}
-              />
-              
-              <ProfileItem
-                icon={<FaHospital className="text-blue-500" />}
-                label="Institution"
-                value={userDetails?.institution_name}
-              />
-              
-              <ProfileItem
-                icon={<FaBriefcase className="text-blue-500" />}
-                label="Experience"
-                value={`${userDetails?.experience} Years`}
-              />
-              
-              <ProfileItem
-                icon={<FaGraduationCap className="text-blue-500" />}
-                label="Specialization"
-                value={userDetails?.specialisation}
-              />
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <QuickStatCard
+            title="Total Patients"
+            value={doctorDetails.patientCount}
+            icon={<FaUserInjured />}
+            trend="+12%"
+            color="blue"
+          />
+          <QuickStatCard
+            title="Today's Visits"
+            value="28"
+            icon={<IoMdPulse />}
+            trend="+3"
+            color="green"
+          />
+          <QuickStatCard
+            title="Critical Cases"
+            value="5"
+            icon={<MdWarning />}
+            trend="-2"
+            color="red"
+          />
+          <QuickStatCard
+            title="Recovery Rate"
+            value="94%"
+            icon={<FaChartLine />}
+            trend="+2%"
+            color="indigo"
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Patient Activity Chart */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Weekly Patient Visits</h2>
+            <div className="h-[300px]">
+              <Line data={patientActivityData} options={chartOptions} />
             </div>
           </div>
 
-          {/* Right Column - Additional Info */}
-          <div className="space-y-6">
-            {/* Account Status */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                <MdVerified className="text-blue-500" />
-                Account Status
-              </h2>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">User Type</p>
-                  <p className="font-semibold text-gray-800 capitalize">
-                    {userDetails?.user_type}
-                  </p>
-                </div>
-                
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <p className="text-sm text-gray-500 mb-1">Member Since</p>
-                  <p className="font-semibold text-gray-800">
-                    {new Date(userDetails?.date_joined).toLocaleDateString()}
-                  </p>
+          {/* Condition Distribution Chart */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Condition Distribution</h2>
+            <div className="h-[300px] flex items-center justify-center">
+              <Doughnut data={conditionDistributionData} options={{ maintainAspectRatio: false }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Alerts Modal */}
+        {showAlerts && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-800">Alerts and Notifications</h2>
+                  <button
+                    onClick={() => setShowAlerts(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <MdClose size={24} className="text-gray-500" />
+                  </button>
                 </div>
               </div>
-            </div>
 
-            {/* Quick Stats */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                <IoMdPulse className="text-blue-500" />
-                {userDetails?.user_type === 'doctor' ? 'Practice Overview' : 'Health Overview'}
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {getDashboardStats(userDetails?.user_type).map((stat, index) => (
-                  <StatsCard
-                    key={index}
-                    icon={stat.icon}
-                    label={stat.label}
-                    value={stat.value}
-                    trend={stat.trend}
-                  />
+              {/* Filters */}
+              <div className="p-4 border-b border-gray-100 flex gap-4">
+                <select
+                  value={selectedSeverity}
+                  onChange={(e) => setSelectedSeverity(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="all">All Severity</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+
+                <select
+                  value={selectedCondition}
+                  onChange={(e) => setSelectedCondition(e.target.value)}
+                  className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="all">All Conditions</option>
+                  <option value="diabetes">Diabetes</option>
+                  <option value="hypertension">Hypertension</option>
+                  <option value="asthma">Asthma</option>
+                </select>
+
+                {(selectedSeverity !== 'all' || selectedCondition !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSelectedSeverity('all');
+                      setSelectedCondition('all');
+                    }}
+                    className="text-blue-500 hover:text-blue-600"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
+
+              {/* Alerts List */}
+              <div className="overflow-y-auto max-h-[60vh]">
+                {filteredAlerts.map((alert) => (
+                  <div key={alert.id} className="p-4 border-b border-gray-100 hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-gray-800">{alert.patient}</h3>
+                      <span className={`px-3 py-1 rounded-full text-sm ${
+                        alert.severity === 'high' ? 'bg-red-100 text-red-600' :
+                        alert.severity === 'medium' ? 'bg-orange-100 text-orange-600' :
+                        'bg-green-100 text-green-600'
+                      }`}>
+                        {alert.severity.charAt(0).toUpperCase() + alert.severity.slice(1)}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 text-sm mb-1">{alert.condition}</p>
+                    <p className="text-gray-800 mb-2">{alert.description}</p>
+                    <p className="text-gray-500 text-sm">{alert.timestamp}</p>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -249,3 +438,28 @@ const StatsCard = ({ icon, label, value, trend }) => (
     </div>
   </div>
 );
+
+// Quick Stat Card Component
+const QuickStatCard = ({ title, value, icon, trend, color }) => {
+  const colorClasses = {
+    blue: 'bg-blue-50 text-blue-500',
+    green: 'bg-green-50 text-green-500',
+    red: 'bg-red-50 text-red-500',
+    indigo: 'bg-indigo-50 text-indigo-500',
+  };
+
+  return (
+    <div className="bg-white p-6 rounded-2xl shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`w-12 h-12 ${colorClasses[color]} rounded-full flex items-center justify-center`}>
+          {icon}
+        </div>
+        <span className={`text-sm ${trend.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+          {trend}
+        </span>
+      </div>
+      <h3 className="text-gray-600 text-sm mb-1">{title}</h3>
+      <p className="text-2xl font-bold text-gray-800">{value}</p>
+    </div>
+  );
+};

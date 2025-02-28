@@ -1,216 +1,252 @@
 import axios from "axios";
 import React, { useState } from "react";
 import { BiDislike, BiLike, BiRepost } from "react-icons/bi";
-import { FaCheckCircle, FaRegComment } from "react-icons/fa";
+import { FaCheckCircle, FaRegComment, FaUserMd, FaUserCircle } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
+import { MdVerified } from "react-icons/md";
 
 import adam from "../pages/assets/adam.png";
 
 const CommentModal = ({ data, onClose, fetchData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [comment, setComment] = useState("");
-
-  const [likeCount, setLikeCount] = useState("248k");
-  const [dislikeCount, setDislikeCount] = useState("23k");
-  const [commentCount, setCommentCount] = useState("120k");
   const [successModal, setSuccessModal] = useState(false);
+  const [interactions, setInteractions] = useState({
+    liked: false,
+    disliked: false,
+    likes: data.likes || 248,
+    dislikes: data.dislikes || 23,
+    comments: data.comments?.length || 0,
+  });
 
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
+  const handleInteraction = (type) => {
+    setInteractions(prev => {
+      if (type === 'like') {
+        return {
+          ...prev,
+          liked: !prev.liked,
+          disliked: false,
+          likes: prev.liked ? prev.likes - 1 : prev.likes + 1,
+          dislikes: prev.disliked ? prev.dislikes - 1 : prev.dislikes
+        };
+      } else if (type === 'dislike') {
+        return {
+          ...prev,
+          disliked: !prev.disliked,
+          liked: false,
+          dislikes: prev.disliked ? prev.dislikes - 1 : prev.dislikes + 1,
+          likes: prev.liked ? prev.likes - 1 : prev.likes
+        };
+      }
+      return prev;
+    });
+  };
 
   const handleAddComment = async () => {
-    if (isLoading) return;
+    if (isLoading || !comment.trim()) return;
     setIsLoading(true);
-    // console.log("DataId: ", data.id);
 
-      const key = localStorage.getItem("key");
-
-      if (!key) {
-        alert("Key not found...");
-        setIsLoading(false);
-        return;
-      }
-    const dataIn = {
-      id: data.id,
-      comment: comment,
-    };
-    console.log("dataIn: ", dataIn);
+    const key = localStorage.getItem("key");
+    if (!key) {
+      alert("Authentication required");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await axios.post(
         "https://medconnect-co7la.ondigitalocean.app/api/comment/",
-        dataIn,
-        {
-          headers: {
-            Authorization: `Token ${key}`,
-          },
-        }
+        { id: data.id, comment: comment.trim() },
+        { headers: { Authorization: `Token ${key}` } }
       );
 
-      console.log("response: ", response);
-
-      if (response) {
+      if (response?.data) {
         setSuccessModal(true);
         setTimeout(() => {
           setSuccessModal(false);
           onClose();
         }, 2000);
         fetchData();
-        setIsLoading(false);
-        // onLogin(); // Call the onLogin function to update the authentication state
-      } else {
-        console.error("Invalid response data:", response.data);
-        alert("Invalid credentials. Please try again.");
       }
     } catch (error) {
-      console.log("Error occurred: ", error);
-      alert("Invalid credentials. Try again later.");
+      console.error("Error adding comment:", error);
+      alert("Failed to add comment. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (successModal) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8 flex flex-col items-center animate-fade-in">
+          <FaCheckCircle size={60} className="text-green-500 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            Comment Posted Successfully!
+          </h3>
+          <p className="text-gray-500">Your comment has been added to the discussion.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="flex justify-center w-full fixed top-0 left-0 px-3 backdrop-blur-md z-[100] h-screen"
-      data-aos="fade-in"
-    >
-      {!successModal ? (
-        <div
-          className="flex flex-col gap-10 my-10 bg-gradient-to-r from-[#7391cc5c] to-[#65b36baa] p-8 sm:p-10 rounded-3xl h-full max-w-2xl z-50 overflow-auto hide-scrollbar"
-          data-aos="zoom-in"
-        >
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-end">
-              <IoClose onClick={onClose} size={30} className="cursor-pointer" />
-            </div>
-            <div className="flex flex-col gap-3 w-96 font-mono">
-              <span className="rounded-2xl bg-slate-500 bg-opacity-35 p-1 px-3">
-                <strong>Title: </strong>
-                {data.title}
-              </span>
-              <p className="p-2 text-[24px] font-semibold font-sans">
-                {data.desc}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 bg-slate-500 bg-opacity-35 p-5 rounded-xl ">
-              {data?.tags?.map((tag, index) => (
-                <span
-                  id={index}
-                  className="text-[12px] bg-green-500 bg-opacity-50 p-1 px-2 rounded-lg cursor-pointer hover:bg-green-600 transition-all"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-fade-in">
+        {/* Header */}
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">Discussion Details</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <IoClose size={24} className="text-gray-500" />
+            </button>
+          </div>
+        </div>
 
-            <strong>Doctors who could help!</strong>
-            <div className="flex  flex-wrap gap-2 bg-slate-500 bg-opacity-35 p-5 rounded-xl">
-              {data?.doctors_related.length > 0 ? (
-                <>
-                  {data?.doctors_related?.map((doctor, index) => (
-                    <span
-                      id={index}
-                      className="text-[14px] bg-blue-500 bg-opacity-50 p-1 px-2 rounded-lg cursor-pointer hover:bg-blue-600 transition-all"
-                    >
-                      @{doctor.username}
-                    </span>
-                  ))}
-                </>
-              ) : (
-                <>No related doctors found...</>
-              )}
-            </div>
-
-            <div className="flex justify-between mt-5 gap-3 p-1 px-3 items-center text-[16px] 0 bg-opacity-30">
-              <span className="flex gap items-end">
-                <BiLike
-                  size={25}
-                  color={`${liked ? "blue" : ""}`}
-                  className="cursor-pointer hover:scale-110"
-                  onClick={() => setLiked(!liked)}
-                />
-                {likeCount}
-              </span>
-              <span className="flex gap-1 items-end">
-                <BiDislike
-                  size={25}
-                  color={`${disliked ? "blue" : ""}`}
-
-                  className="cursor-pointer hover:scale-110"
-                  onClick={() => setDisliked(!disliked)}
-                />
-                {dislikeCount}
-              </span>
-              <span className="flex gap-1 items-end">
-                <FaRegComment
-                  size={25}
-                  className="cursor-pointer hover:scale-110"
-                  onClick={() => setDislikeCount(dislikeCount - 1)}
-                />
-                {commentCount}
-              </span>
-              <span className="flex gap-1 items-end">
-                <BiRepost
-                  size={25}
-                  className="cursor-pointer hover:scale-110"
-                  onClick={() => setDislikeCount(dislikeCount - 1)}
-                />
-                {commentCount}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-col">
-                <span>Comments</span>
-                <div className="flex gap-1 justify-between w-full">
-                  <input
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="add coment"
-                    className="rounded-xl p-1 px-3 bg-black bg-opacity-60 text-white w-full outline-none"
-                  />
-                  <button
-                    className="p-1 px-3 bg-black rounded-xl text-white"
-                    onClick={handleAddComment}
-                  >
-                    {isLoading ? "Posting..." : "Post"}
-                  </button>
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-12rem)]">
+          <div className="p-6 space-y-6">
+            {/* Post Details */}
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  {data.userType === 'doctor' ? (
+                    <FaUserMd className="text-blue-500 text-xl" />
+                  ) : (
+                    <FaUserCircle className="text-blue-500 text-xl" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-800">{data.author}</h3>
+                    {data.userType === 'doctor' && (
+                      <MdVerified className="text-blue-500" />
+                    )}
+                  </div>
+                  <p className="text-gray-500 text-sm">{new Date(data.date).toLocaleDateString()}</p>
                 </div>
               </div>
-              <div className="bg-black rounded-2xl p-5 text-white font-light font-sans">
-                {data?.comments.length > 0 ? (
-                  <>
-                    {data.comments?.map((comment, index) => (
-                      <div className="flex flex-col" key={index}>
-                        <div className="flex gap-1 ">
-                          <img src={adam} className="w-7 h-7"></img>
-                          <span className="text-slate-300">
-                            @{comment.author}
-                          </span>
-                        </div>
-                        <div className="flex justify-between p-3">
-                          <span>{comment?.comment}</span>
-                          <span className="text-[12px] items-end flex w-20">
-                            {comment?.date?.slice(0, 10)}
-                          </span>
-                        </div>
-                        <div className="h-[1px] mb-2 w-full bg-slate-500"></div>
-                      </div>
+
+              <h1 className="text-xl font-semibold text-gray-800">{data.title}</h1>
+              <p className="text-gray-600">{data.desc}</p>
+
+              {/* Tags */}
+              {data.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {data.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Related Doctors */}
+              {data.doctors_related?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-700">Related Healthcare Professionals</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {data.doctors_related.map((doctor, index) => (
+                      <span
+                        key={index}
+                        className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-full text-sm"
+                      >
+                        <FaUserMd className="text-sm" />
+                        @{doctor.username}
+                      </span>
                     ))}
-                  </>
+                  </div>
+                </div>
+              )}
+
+              {/* Interactions */}
+              <div className="flex items-center gap-6 pt-4 border-t">
+                <button
+                  onClick={() => handleInteraction('like')}
+                  className={`flex items-center gap-2 ${
+                    interactions.liked ? 'text-blue-500' : 'text-gray-500'
+                  } hover:text-blue-500 transition-colors`}
+                >
+                  <BiLike size={20} />
+                  <span>{interactions.likes}</span>
+                </button>
+                <button
+                  onClick={() => handleInteraction('dislike')}
+                  className={`flex items-center gap-2 ${
+                    interactions.disliked ? 'text-blue-500' : 'text-gray-500'
+                  } hover:text-blue-500 transition-colors`}
+                >
+                  <BiDislike size={20} />
+                  <span>{interactions.dislikes}</span>
+                </button>
+                <div className="flex items-center gap-2 text-gray-500">
+                  <FaRegComment size={20} />
+                  <span>{interactions.comments}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-700">Comments</h4>
+              
+              {/* Add Comment */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Add your comment..."
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+                <button
+                  onClick={handleAddComment}
+                  disabled={isLoading || !comment.trim()}
+                  className={`px-4 py-2 rounded-lg ${
+                    isLoading || !comment.trim()
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  } transition-colors`}
+                >
+                  {isLoading ? 'Posting...' : 'Post'}
+                </button>
+              </div>
+
+              {/* Comments List */}
+              <div className="space-y-4">
+                {data.comments?.length > 0 ? (
+                  data.comments.map((comment, index) => (
+                    <div key={index} className="flex gap-3 p-4 bg-gray-50 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <FaUserCircle className="text-blue-500" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-gray-700">@{comment.author}</span>
+                          <span className="text-sm text-gray-500">
+                            {new Date(comment.date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mt-1">{comment.comment}</p>
+                      </div>
+                    </div>
+                  ))
                 ) : (
-                  <span>No Comments...</span>
+                  <p className="text-center text-gray-500 py-4">No comments yet</p>
                 )}
               </div>
             </div>
           </div>
         </div>
-      ) : (
-        <div className="flex justify-center h-screen w-screen items-center">
-          <FaCheckCircle size={100} data-aos="zoom-in" color="green" />
-        </div>
-      )}
+      </div>
     </div>
   );
 };
+
 export default CommentModal;

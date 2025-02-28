@@ -2,11 +2,11 @@ import axios from "axios";
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import debounce from "lodash.debounce";
-
+import { FiExternalLink } from "react-icons/fi";
+import { FaUserPlus, FaFileMedical, FaSearch, FaUserInjured } from "react-icons/fa";
+import { MdVerified, MdCalendarToday, MdWc } from "react-icons/md";
 import AddPatientModal from "../components/addPatientModal";
 import AddReportModal from "../components/addReportModal";
-
-import { FiExternalLink } from "react-icons/fi";
 
 export default function Patient() {
   const navigate = useNavigate();
@@ -33,8 +33,6 @@ export default function Patient() {
       setIsLoading(false);
       return;
     }
-    console.log("patient fetching...");
-    
 
     try {
       const response = await axios.get(
@@ -45,9 +43,6 @@ export default function Patient() {
           },
         }
       );
-
-      console.log("patient response: ", response);
-      
 
       if (response?.data) {
         setPatientList(response?.data);
@@ -126,174 +121,188 @@ export default function Patient() {
   };
 
   const handlePatientClick = async (index) => {
-    // try {
-    //   const response = await axios.get(
-    //     "https://medconnect-co7la.ondigitalocean.app/api/records/",
-    //     { id: "1" }
-    //   );
-
-    //   console.log("response: ", response);
-    //   if (response) {
-    //     console.log("summary: ", response?.data[0].summary);
-    //   }
-    // } catch (error) {
-    //   console.log("error: ", error);
-    // }
     const selectedPatient = patientList[index];
     setSelectedPatient(selectedPatient);
     fetchPatientSummary(selectedPatient.id);
   };
 
-  // Function to highlight matched text
-  const highlightMatch = (name, query) => {
-    if (!query) return name;
-    const parts = name.split(new RegExp(`(${query})`, "gi"));
-    return parts.map((part, index) =>
-      part.toLowerCase() === query.toLowerCase() ? (
-        <span key={index} className="bg-blue-300 p-1">
-          {part}
-        </span>
-      ) : (
-        part
-      )
-    );
-  };
-
   return (
-    <div className="page2 flex flex-col gap-3 max-sm:w-screen p-10">
-      <span className="text-[20px] font-serif font-semibold">
-        Patients Details
-      </span>
+    <div className="p-6 max-w-[1600px] mx-auto">
+      {/* Header Section */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Patient Records</h1>
+        <p className="text-gray-600">Manage and view your patient information</p>
+      </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-10">
-        <input
-          placeholder="Search Patient"
-          value={searchPatient}
-          onChange={(e) => setSearchPatient(e.target.value)}
-          className="p-1 px-2 sm:w-96 rounded-lg border border-slate-400"
-        />
+      {/* Search and Add Section */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-8">
+        <div className="relative flex-1">
+          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            placeholder="Search patients by name..."
+            value={searchPatient}
+            onChange={(e) => setSearchPatient(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+          />
+        </div>
         <button
-          className="p-1 sm:p-2 sm:px-4 rounded-lg bg-gradient-to-r from-[#aae090be] to-[#48ba4acf]"
           onClick={() => setAddPatientModel(true)}
+          className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
         >
-          Add Patient
+          <FaUserPlus />
+          <span>Add Patient</span>
         </button>
       </div>
-      <div className="container flex flex-col sm:flex-row gap-10">
-        <div className="left">
-          <div className="flex flex-col gap-2 sm:w-96">
-            {patientList.length > 0 ? (
-              patientList?.map((patient, index) => (
-                <div
-                  key={index}
-                  className="bg-slate-200 p-3 rounded-lg cursor-pointer hover:bg-slate-300 transition-all"
-                  onClick={() => handlePatientClick(index)}
-                >
-                  <span>{highlightMatch(patient.name, searchPatient)}</span>
-                </div>
-              ))
-            ) : (
-              <>{!isLoading && <span>No Patient Data</span>}</>
-            )}
-          </div>
-          <div>{isLoading && <span>Fetching Data...</span>}</div>
-        </div>
-        {selectedPatient && (
-          <div className="flex flex-col gap-3 p-2 sm:p-5 border border-gray-300 rounded-lg w- h-full  text-[12px] sm:text-[16px]">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm sm:text-lg font-semibold">
-                Patient Details
-              </h3>
-              <button
-                className="p-2 px-4 rounded-lg bg-gradient-to-r from-[#aae090be] to-[#48ba4acf]"
-                onClick={() => setAddReportModel(true)}
-              >
-                Add Report
-              </button>
+
+      {/* Main Content */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Patient List */}
+        <div className="lg:w-1/3">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="font-semibold text-gray-800">Patient List</h2>
             </div>
-            <p>
-              <strong>Name:</strong> {selectedPatient.name}
-            </p>
-            <p>
-              <strong>Age:</strong> {selectedPatient.age}
-            </p>
-            <p>
-              <strong>Sex:</strong> {selectedPatient.gender}
-            </p>
-            {/* <p>
-              <strong>Doctor:</strong> {selectedPatient.doctor}
-            </p> */}
-
-            <strong className="flex sm:justify-center">
-              <span className="max-sm:hidden">
-                ****************************
-              </span>
-              {/* <span className="sm:hidden">*****</span> */}
-              Patient Records
-              <span className="max-sm:hidden">
-                ****************************
-              </span>
-              {/* <span className="sm:hidden">*****</span> */}
-            </strong>
-
-            <div>
-              {patientDetails ? (
-                <div className="flex flex-col gap-3">
-                  {patientDetails.map((patient, index) => (
-                    <div className="flex flex-col gap-3 bg-slate-200 p-3 rounded-md">
-                      <div>
-                        <strong>ReportType:</strong>
-                        <span>{patient.name}</span>
+            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+              {isLoading ? (
+                <div className="p-4 text-center text-gray-500">Loading patients...</div>
+              ) : patientList.length > 0 ? (
+                patientList.map((patient, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handlePatientClick(index)}
+                    className={`p-4 cursor-pointer transition-all hover:bg-gray-50 ${
+                      selectedPatient?.id === patient.id ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <FaUserInjured className="text-blue-500" />
                       </div>
                       <div>
-                        <strong>Date:</strong>
-                        <span>{patient.date}</span>
-                      </div>
-                      <div>
-                        <strong>Summary:</strong>
-                        {patient?.summary}
-                      </div>
-                      <span>
-                        <strong className="pt-10">Tags:</strong>
-                      </span>
-                      {patient.tags ? (
-                        <div className="flex gap-2 flex-wrap">
-                          {patient.tags.map((name, index) => (
-                            <span className="p-1 px-2 text-[10px] sm:text-[13px] rounded-lg bg-gradient-to-tr from-[#69ef69ab] to-[#6095e6a1]">
-                              {name}
-                            </span>
-                          ))}
+                        <h3 className="font-medium text-gray-800">{patient.name}</h3>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <MdCalendarToday className="text-gray-400" />
+                            {patient.age} years
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MdWc className="text-gray-400" />
+                            {patient.gender}
+                          </span>
                         </div>
-                      ) : (
-                        <>No Tags...</>
-                      )}
-                      <div className="w-full">
-                        <a
-                          className="flex items-center w-24 gap-1 p-1 px-2 rounded-md bg-gradient-to-r from-[#5e99ebc0] to-[#2a39e2a3] cursor-pointer"
-                          href={`${patient.url}`}
-                          target="_blank"
-                        >
-                          Report
-                          <FiExternalLink />
-                        </a>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))
               ) : (
-                <>No Records...</>
+                <div className="p-4 text-center text-gray-500">No patients found</div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Patient Details */}
+        {selectedPatient ? (
+          <div className="flex-1">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Patient Header */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center">
+                      <FaUserInjured className="text-blue-500 text-2xl" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-gray-800">{selectedPatient.name}</h2>
+                      <div className="flex items-center gap-4 text-gray-500 mt-1">
+                        <span className="flex items-center gap-1">
+                          <MdCalendarToday />
+                          {selectedPatient.age} years
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MdWc />
+                          {selectedPatient.gender}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAddReportModel(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all"
+                  >
+                    <FaFileMedical />
+                    Add Report
+                  </button>
+                </div>
+              </div>
+
+              {/* Medical Records */}
+              <div className="p-6">
+                <h3 className="font-semibold text-gray-800 mb-4">Medical Records</h3>
+                <div className="space-y-4">
+                  {patientDetails.length > 0 ? (
+                    patientDetails.map((record, index) => (
+                      <div key={index} className="bg-gray-50 rounded-xl p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-medium text-gray-800">{record.name}</h4>
+                            <p className="text-sm text-gray-500">{record.date}</p>
+                          </div>
+                          <a
+                            href={record.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-blue-500 hover:text-blue-600"
+                          >
+                            View Report
+                            <FiExternalLink />
+                          </a>
+                        </div>
+                        <p className="text-gray-600 mb-3">{record.summary}</p>
+                        {record.tags && (
+                          <div className="flex flex-wrap gap-2">
+                            {record.tags.map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 py-8">
+                      No medical records available
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="text-center text-gray-500">
+              <FaUserInjured className="text-6xl mx-auto mb-4 text-gray-300" />
+              <p>Select a patient to view their details</p>
             </div>
           </div>
         )}
       </div>
+
       {addPatientModal && (
-        <AddPatientModal onClose={() => setAddPatientModel(false)} />
+        <AddPatientModal
+          onClose={() => setAddPatientModel(false)}
+          onSuccess={() => fetchPatients()}
+        />
       )}
       {addReportModel && (
         <AddReportModal
           id={selectedPatient?.id}
           onClose={() => setAddReportModel(false)}
+          onSuccess={() => fetchPatientSummary(selectedPatient?.id)}
         />
       )}
     </div>
