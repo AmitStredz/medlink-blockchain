@@ -65,7 +65,10 @@ export default function Login() {
             </h1>
           </div>
           <p className="text-gray-600">
-            Connect with healthcare professionals securely
+            Secure Digital Health Records Management System
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
+            Streamline patient care with intelligent record keeping
           </p>
         </div>
 

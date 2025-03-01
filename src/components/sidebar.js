@@ -65,6 +65,7 @@ export default function Sidebar() {
         />
       )}
 
+
       {/* Sidebar */}
       <div
         className={`fixed lg:static inset-y-0 right-0 z-40 w-screen lg:w-64 bg-white border-r border-gray-100 transform transition-transform duration-300 ease-in-out lg:transform-none ${
