@@ -45,7 +45,7 @@ const AddPatientModal = ({ onClose, onSuccess }) => {
 
     try {
       const response = await axios.post(
-        "https://medconnect-co7la.ondigitalocean.app/api/patients/",
+        "https://medlink-zavgk.ondigitalocean.app/api/patients/",
         formData,
         {
           headers: {

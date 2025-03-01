@@ -50,7 +50,7 @@ export default function DashboardContent() {
 
     try {
       const response = await axios.get(
-        `https://medconnect-co7la.ondigitalocean.app/api/userProfile/`,
+        `https://medlink-zavgk.ondigitalocean.app/api/userProfile/`,
         {
           headers: {
             Authorization: `Token ${key}`,

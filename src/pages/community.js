@@ -23,7 +23,7 @@ export default function Community({ triggerFetch }) {
     setIsLoading(true);
     try {
       const response = await axios.get(
-        "https://medconnect-co7la.ondigitalocean.app/api/posts/",
+        "https://medlink-zavgk.ondigitalocean.app/api/posts/",
         {
           Headers: {
             Authentication: `Token ${key}`,

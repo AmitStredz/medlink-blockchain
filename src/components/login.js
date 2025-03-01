@@ -32,7 +32,7 @@ export default function Login() {
 
     try {
       const response = await axios.post(
-        "https://medconnect-co7la.ondigitalocean.app/api/auth/login/",
+        "https://medlink-zavgk.ondigitalocean.app/api/auth/login/",
         formData
       );
 

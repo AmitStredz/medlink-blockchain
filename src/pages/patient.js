@@ -36,7 +36,7 @@ export default function Patient() {
 
     try {
       const response = await axios.get(
-        `https://medconnect-co7la.ondigitalocean.app/api/patients/?search=${searchQuery}`,
+        `https://medlink-zavgk.ondigitalocean.app/api/patients/?search=${searchQuery}`,
         {
           headers: {
             Authorization: `Token ${key}`,
@@ -91,7 +91,7 @@ export default function Patient() {
 
     try {
       const response = await axios.get(
-        `https://medconnect-co7la.ondigitalocean.app/api/records/${patientId}`, // Passing patient_id as a query parameter
+        `https://medlink-zavgk.ondigitalocean.app/api/records/${patientId}`, // Passing patient_id as a query parameter
         {
           headers: {
             Authorization: `Token ${key}`, // Include the Authorization header

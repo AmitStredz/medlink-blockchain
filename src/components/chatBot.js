@@ -35,7 +35,7 @@ export default function ChatComponent({ id, name }) {
 
     try {
       const response = await axios.post(
-        "https://medconnect-co7la.ondigitalocean.app/api/chat/",
+        "https://medlink-zavgk.ondigitalocean.app/api/chat/",
         { patient_id: id, prompt: input }
       );
 

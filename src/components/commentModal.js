@@ -55,7 +55,7 @@ const CommentModal = ({ data, onClose, fetchData }) => {
 
     try {
       const response = await axios.post(
-        "https://medconnect-co7la.ondigitalocean.app/api/comment/",
+        "https://medlink-zavgk.ondigitalocean.app/api/comment/",
         { id: data.id, comment: comment.trim() },
         { headers: { Authorization: `Token ${key}` } }
       );
