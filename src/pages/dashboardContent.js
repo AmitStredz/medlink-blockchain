@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState, useCallback } from "react";
+import { useWeb3 } from '../context/Web3Context';
+import { useContract } from '../hooks/useContract';
+import { useNavigate } from 'react-router-dom';
 import { FaUserMd, FaHospital, FaBriefcase, FaGraduationCap, FaUserInjured, FaCalendar, FaFileAlt, FaPrescriptionBottleAlt, FaBell, FaChartLine, FaAward } from "react-icons/fa";
 import { RiMentalHealthLine } from "react-icons/ri";
 import { MdDateRange, MdVerified, MdClose, MdWarning, MdEmail, MdPhone } from "react-icons/md";
@@ -29,51 +30,67 @@ ChartJS.register(
   ArcElement
 );
 
-export default function DashboardContent() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [userDetails, setUserDetails] = useState(null);
-  const { updateUserType } = useAuth();
+export default function DashboardContent({ contract, walletAddress, provider }) {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [patients, setPatients] = useState([]);
   const [showAlerts, setShowAlerts] = useState(false);
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [selectedCondition, setSelectedCondition] = useState('all');
+  const [error, setError] = useState(null);
+  const { account, doctor, loading: web3Loading } = useWeb3();
+  const { getDoctorPatients } = useContract();
 
-  const fetchUserDetails = async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    const key = localStorage.getItem("key");
-
-    if (!key) {
-      alert("Authentication required");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await axios.get(
-        `https://medlink-zavgk.ondigitalocean.app/api/userProfile/`,
-        {
-          headers: {
-            Authorization: `Token ${key}`,
-          },
-        }
-      );
-
-      if (response?.data) {
-        setUserDetails(response.data);
-        localStorage.setItem("user_type", response.data.user_type);
-        localStorage.setItem("id", response.data.id);
-        updateUserType(response.data.user_type);
-      }
-    } catch (error) {
-      console.error("Error fetching user details:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Check authentication once on mount
   useEffect(() => {
-    fetchUserDetails();
-  }, []);
+    const checkAuth = async () => {
+      console.log("Checking auth - Account:", account);
+      console.log("Checking auth - Doctor:", doctor);
+
+      if (!account || !doctor?.isRegistered) {
+        console.log("Not authenticated, redirecting to login");
+        navigate('/login');
+        return;
+      }
+      
+      setIsLoading(false);
+    };
+
+    if (!web3Loading) {
+      checkAuth();
+    }
+  }, [account, doctor, web3Loading, navigate]);
+
+  // Show loading state while checking auth
+  if (web3Loading || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <IoMdPulse className="text-5xl text-blue-500 animate-pulse" />
+          <p className="text-gray-500">Loading your medical dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if not authenticated
+  if (!account || !doctor?.isRegistered) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">
+            Please connect your wallet and ensure you're registered as a doctor.
+          </p>
+          <button 
+            onClick={() => navigate('/login')}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Dummy alerts data
   const alerts = [
@@ -213,17 +230,6 @@ export default function DashboardContent() {
     ]
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <IoMdPulse className="text-5xl text-blue-500 animate-pulse" />
-          <p className="text-gray-500">Loading your medical profile...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -231,11 +237,11 @@ export default function DashboardContent() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Medical Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {userDetails?.username || 'Doctor'}</p>
+            <p className="text-gray-600">Welcome back, Dr. {doctor?.name || 'Doctor'}</p>
           </div>
           <button
             onClick={() => setShowAlerts(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-xl border border-gray-200 shadow-sm transition-all  group hover:shadow-md"
+            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-xl border border-gray-200 shadow-sm transition-all group hover:shadow-md"
           >
             <div className="relative">
               <FaBell className="text-xl text-gray-600 group-hover:text-blue-500 transition-colors" />
@@ -254,7 +260,7 @@ export default function DashboardContent() {
           </button>
         </div>
 
-        {/* User Profile Card */}
+        {/* Doctor Profile Card */}
         <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between">
             <div className="flex gap-6">
@@ -263,42 +269,24 @@ export default function DashboardContent() {
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold text-gray-800">{userDetails?.username || 'Doctor'}</h1>
+                  <h1 className="text-2xl font-bold text-gray-800">{doctor?.name || 'Doctor'}</h1>
                   <MdVerified className="text-blue-500 text-xl" />
                 </div>
                 <div className="flex items-center gap-2 text-gray-600 mb-3">
-                  <span>{userDetails?.specialisation || 'Medical Professional'}</span>
-                  {userDetails?.years_exp && (
-                    <>
-                      <span>•</span>
-                      <span>{userDetails.years_exp} years experience</span>
-                    </>
-                  )}
+                  <span>{doctor?.specialization || 'Medical Professional'}</span>
+                  <span>•</span>
+                  <span>License: {doctor?.licenseNumber}</span>
                 </div>
                 <div className="flex flex-wrap gap-4">
-                  {userDetails?.institution_name && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FaHospital className="text-blue-500" />
-                      <span>{userDetails.institution_name}</span>
-                    </div>
-                  )}
-                  {userDetails?.user_type && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <FaGraduationCap className="text-blue-500" />
-                      <span className="capitalize">{userDetails.user_type}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <FaHospital className="text-blue-500" />
+                    <span>{doctor?.institution_name || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <FaGraduationCap className="text-blue-500" />
+                    <span>Registered Doctor</span>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-2 text-gray-600">
-                <MdEmail className="text-blue-500" />
-                <span>{supplementaryData.email}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-600">
-                <MdPhone className="text-blue-500" />
-                <span>{supplementaryData.phone}</span>
               </div>
             </div>
           </div>
@@ -308,7 +296,7 @@ export default function DashboardContent() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <QuickStatCard
             title="Total Patients"
-            value={supplementaryData.patientCount}
+            value={patients.length}
             icon={<FaUserInjured />}
             trend="+12%"
             color="blue"
@@ -611,25 +599,18 @@ const StatsCard = ({ icon, label, value, trend }) => (
 
 // Quick Stat Card Component
 const QuickStatCard = ({ title, value, icon, trend, color }) => {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-500',
-    green: 'bg-green-50 text-green-500',
-    red: 'bg-red-50 text-red-500',
-    indigo: 'bg-indigo-50 text-indigo-500',
-  };
-
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 ${colorClasses[color]} rounded-full flex items-center justify-center`}>
-          {icon}
+    <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow`}>
+      <div className="flex items-center justify-between">
+        <div className={`w-12 h-12 rounded-full bg-${color}-100 flex items-center justify-center`}>
+          <div className={`text-${color}-500 text-xl`}>{icon}</div>
         </div>
-        <span className={`text-sm ${trend.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+        <div className={`px-3 py-1 rounded-full text-sm ${trend.startsWith('+') ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
           {trend}
-        </span>
+        </div>
       </div>
-      <h3 className="text-gray-600 text-sm mb-1">{title}</h3>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+      <h3 className="text-gray-600 text-sm mt-4">{title}</h3>
+      <p className="text-2xl font-bold text-gray-800 mt-1">{value}</p>
     </div>
   );
 };

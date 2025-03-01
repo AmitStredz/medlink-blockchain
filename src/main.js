@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -12,15 +12,24 @@ import Patient from "./pages/patient";
 import Community from "./pages/community";
 import AiAssistant from "./pages/aiAssistant";
 
-export default function main({ onLogout }) {
+export default function Main({ onLogout, contract, walletAddress, provider }) {
   return (
     <div className="flex h-full w-screen font-mono overflow-x-hidden">
       {/* <div className=""> */}
-        <Sidebar />
+      <Sidebar />
       {/* </div> */}
       <div className="flex-1">
         <Routes>
-          <Route path="/dashboard" element={<DashboardContent />} />
+          <Route
+            path="/dashboard"
+            element={
+              <DashboardContent
+                contract={contract}
+                walletAddress={walletAddress}
+                provider={provider}
+              />
+            }
+          />
           <Route path="/patients" element={<Patient />} />
           <Route path="/community" element={<Community />} />
           <Route path="/ai" element={<AiAssistant />} />

@@ -1,53 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import axios from "axios";
 import { RiPulseLine } from "react-icons/ri";
-import { FaUserMd, FaLock, FaSpinner } from "react-icons/fa";
+import { FaUserMd, FaSpinner } from "react-icons/fa";
 
-export default function Login() {
+export default function Login({ contract, walletAddress }) {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
   const [error, setError] = useState("");
+  const [doctorData, setDoctorData] = useState(null);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    setError(""); // Clear error when user types
-  };
+  // Check doctor status when wallet or contract changes
+  useEffect(() => {
+    const checkDoctorStatus = async () => {
+      if (!walletAddress || !contract) return;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isLoading) return;
-
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const response = await axios.post(
-        "https://medlink-zavgk.ondigitalocean.app/api/auth/login/",
-        formData
-      );
-
-      if (response?.data?.key) {
-        localStorage.setItem("key", response.data.key);
-        login(response.data.key);
-        navigate("/dashboard");
-      } else {
-        setError("Invalid response from server");
+      try {
+        console.log("Checking doctor status for:", walletAddress);
+        const data = await contract.doctors(walletAddress);
+        console.log("Doctor data:", data);
+        
+        if (data && data.isRegistered) {
+          setDoctorData(data);
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking doctor status:", error);
       }
+    };
+
+    checkDoctorStatus();
+  }, [walletAddress, contract, navigate]);
+
+  const handleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+
+      if (!walletAddress) {
+        setError("Please connect your wallet first");
+        return;
+      }
+
+      if (!contract) {
+        setError("Contract not initialized");
+        return;
+      }
+
+      console.log("Checking doctor registration...");
+      const doctorData = await contract.doctors(walletAddress);
+      console.log("Doctor data:", doctorData);
+
+      if (!doctorData.isRegistered) {
+        setError("This wallet is not registered as a doctor. Please register first.");
+        return;
+      }
+
+      navigate("/dashboard");
     } catch (error) {
-      setError(
-        error.response?.data?.message || 
-        "Invalid credentials. Please try again."
-      );
+      console.error("Login error:", error);
+      setError(error.message || "Failed to login. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -67,9 +78,6 @@ export default function Login() {
           <p className="text-gray-600">
             Secure Digital Health Records Management System
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Streamline patient care with intelligent record keeping
-          </p>
         </div>
 
         {/* Login Card */}
@@ -78,102 +86,52 @@ export default function Login() {
             Welcome Back
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 block">
-                Username
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaUserMd className="text-gray-400" />
+          <div className="space-y-6">
+            {/* Wallet Connection Status */}
+            <div className="text-center space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                <FaUserMd className="text-gray-400" />
+                <span className="text-gray-600">
+                  {walletAddress 
+                    ? `Connected: ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` 
+                    : "Not Connected"}
+                </span>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+                  {error}
                 </div>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Enter your username"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 block">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FaLock className="text-gray-400" />
-                </div>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                  placeholder="Enter your password"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="text-red-500 text-sm bg-red-50 p-3 rounded-lg">
-                {error}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <FaSpinner className="animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
               )}
-            </button>
 
-            {/* Additional Links */}
-            <div className="text-center text-sm text-gray-500">
-              <a
-                href="#forgot-password"
-                className="hover:text-blue-500 transition-colors"
+              {/* Login Button */}
+              <button
+                onClick={handleLogin}
+                disabled={isLoading || !walletAddress}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
               >
-                Forgot password?
-              </a>
-              <span className="mx-2">•</span>
-              <a
-                href="#contact-support"
-                className="hover:text-blue-500 transition-colors"
-              >
-                Contact Support
-              </a>
+                {isLoading ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  "Login as Doctor"
+                )}
+              </button>
+
+              {/* Registration Link */}
+              <p className="text-sm text-gray-500 mt-4">
+                Not registered yet?{" "}
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="text-blue-500 hover:text-blue-600 font-medium"
+                >
+                  Register as Doctor
+                </button>
+              </p>
             </div>
-          </form>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 MediLink. All rights reserved.</p>
-          <div className="mt-2">
-            <a href="#privacy" className="hover:text-blue-500 transition-colors">
-              Privacy Policy
-            </a>
-            <span className="mx-2">•</span>
-            <a href="#terms" className="hover:text-blue-500 transition-colors">
-              Terms of Service
-            </a>
           </div>
         </div>
       </div>
